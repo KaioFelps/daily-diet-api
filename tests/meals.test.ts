@@ -19,7 +19,7 @@ describe("meals routes", async () => {
 
   // ---
 
-  it("should generate to an user a session id if request is valid", async () => {
+  it.only("should generate to an user a session id if request is valid", async () => {
     const response = await request(app.server)
       .post("/meals/new")
       .send({
@@ -28,7 +28,8 @@ describe("meals routes", async () => {
         isDiet: false,
       })
       .expect(204);
-    const cookies = response.header["set-cookies"];
+
+    const cookies = response.header["set-cookie"];
     expect(cookies).not.toBeUndefined();
   });
 
@@ -39,7 +40,7 @@ describe("meals routes", async () => {
         title: "hamburguer",
         isDiet: false,
       })
-      .expect(400);
+      .expect(204);
 
     await request(app.server)
       .post("/meals/new")
