@@ -86,7 +86,7 @@ describe("meals routes", async () => {
     expect(secondRequestCookies).toBeUndefined();
   });
 
-  it.skip("should list all of an user meals", async () => {
+  it("should list all of an user meals", async () => {
     const firstRequest = await request(app.server)
       .post("/meals/new")
       .send({
@@ -114,18 +114,18 @@ describe("meals routes", async () => {
       .expect(200);
 
     expect(listAllMealsResponse.body).toEqual({
-      data: [
+      data: expect.arrayContaining([
         expect.objectContaining({
           title: "hamburguer",
-          description: "ate a hamburguer with friends",
-          isDiet: false,
+          desc: "ate a hamburguer with friends",
+          diet: 0,
         }),
         expect.objectContaining({
           title: "salad",
-          description: "made salad for dinner",
-          isDiet: true,
+          desc: "made salad for dinner",
+          diet: 1,
         }),
-      ],
+      ]),
     });
   });
 

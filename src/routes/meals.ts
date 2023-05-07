@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import { FastifyInstance } from "fastify";
 import z from "zod";
 import { knex } from "../db";
+import validateSessionId from "../middlewares/validate-session-id";
+import getSessionId from "../utils/get-session-id";
 
 export async function mealsRoutes(app: FastifyInstance) {
   app.post("/new", async (req, res) => {
@@ -68,6 +70,33 @@ export async function mealsRoutes(app: FastifyInstance) {
 
     res.code(204);
   });
+
+  app.get(
+    "/list",
+    {
+      preHandler: [validateSessionId],
+    },
+    async (req, res) => {
+      const sessionId = getSessionId(req);
+
+      const mealsIDs = await knex("meal_session")
+        .select("meal_id")
+        .where("session_id", "like", sessionId);
+
+      const arrayOfMealIDs: string[] = [];
+
+      for (let i = 0; i < mealsIDs.length; i++) {
+        const mealId = mealsIDs[i].meal_id;
+        arrayOfMealIDs.push(mealId);
+      }
+
+      const mealsList = await knex("meals")
+        .select()
+        .whereIn("id", arrayOfMealIDs);
+
+      return res.code(200).send({ data: mealsList });
+    }
+  );
 
   // app.get("/reset", async () => {
   //   await knex("meals").del();

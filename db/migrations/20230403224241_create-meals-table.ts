@@ -15,11 +15,7 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable("sessions", (table) => {
     table.uuid("id").primary();
-    table
-      .dateTime("created_at", {
-        useTz: true,
-      })
-      .defaultTo(knex.fn.now());
+    table.timestamp("created_at").defaultTo(knex.fn.now());
   });
 
   await knex.schema.createTable("meal_session", (table) => {
