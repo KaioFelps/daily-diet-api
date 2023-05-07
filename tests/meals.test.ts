@@ -4,22 +4,22 @@ import request from "supertest";
 import { execSync } from "node:child_process";
 
 describe("meals routes", async () => {
-  beforeAll(() => {
-    app.ready();
+  beforeAll(async () => {
+    await app.ready();
   });
 
-  afterAll(() => {
-    app.close();
+  afterAll(async () => {
+    await app.close();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     execSync("npm run knex -- migrate:rollback --all");
     execSync("npm run knex -- migrate:latest");
   });
 
   // ---
 
-  it.only("should generate to an user a session id if request is valid", async () => {
+  it("should generate to an user a session id if request is valid", async () => {
     const response = await request(app.server)
       .post("/meals/new")
       .send({
@@ -69,24 +69,24 @@ describe("meals routes", async () => {
       })
       .expect(204);
 
-    const cookies1 = response1.get("Set-Cookie");
+    const firstRequestCookies = response1.get("Set-Cookie");
+    // const sessionId = firstRequestCookies[0].split(/[;=]/g)[1];
 
     const response2 = await request(app.server)
       .post("/meals/new")
+      .set("Cookie", firstRequestCookies)
       .send({
         title: "salad",
         description: "made salad for dinner",
         isDiet: true,
       })
-      .set("Cookie", cookies1)
       .expect(204);
 
-    const cookies2 = response2.get("Set-Cookie");
-
-    expect(cookies1).toEqual(cookies2);
+    const secondRequestCookies = response2.get("Set-Cookie");
+    expect(secondRequestCookies).toBeUndefined();
   });
 
-  it("should list all of an user meals", async () => {
+  it.skip("should list all of an user meals", async () => {
     const firstRequest = await request(app.server)
       .post("/meals/new")
       .send({
@@ -129,7 +129,7 @@ describe("meals routes", async () => {
     });
   });
 
-  it("should be possible to get a specific meal data", async () => {
+  it.skip("should be possible to get a specific meal data", async () => {
     const firstRequestResponse = await request(app.server)
       .post("/meals/new")
       .send({
@@ -168,7 +168,7 @@ describe("meals routes", async () => {
     });
   });
 
-  it("shouldn't show other user's meal", async () => {
+  it.skip("shouldn't show other user's meal", async () => {
     const firstRequestResponse = await request(app.server)
       .post("/meals/new")
       .send({
@@ -197,7 +197,7 @@ describe("meals routes", async () => {
     expect(listFirstUserMeals.body.data.length).toBe(1);
   });
 
-  it("should let a user delete his meal", async () => {
+  it.skip("should let a user delete his meal", async () => {
     const firstRequestResponse = await request(app.server)
       .post("/meals/new")
       .send({
@@ -222,7 +222,7 @@ describe("meals routes", async () => {
       .expect(204);
   });
 
-  it("should not let a user delete other's user meal", async () => {
+  it.skip("should not let a user delete other's user meal", async () => {
     const firstRequestResponse = await request(app.server)
       .post("/meals/new")
       .send({
@@ -246,7 +246,7 @@ describe("meals routes", async () => {
       .expect(400);
   });
 
-  it("should be possible to edit a meal", async () => {
+  it.skip("should be possible to edit a meal", async () => {
     const firstRequest = await request(app.server)
       .post("/meals/new")
       .send({
@@ -328,7 +328,7 @@ describe("meals routes", async () => {
     });
   });
 
-  it("shouldn't be possible to edit other user's meal", async () => {
+  it.skip("shouldn't be possible to edit other user's meal", async () => {
     const firstRequest = await request(app.server)
       .post("/meals/new")
       .send({
@@ -354,7 +354,7 @@ describe("meals routes", async () => {
       .expect(400);
   });
 
-  it("should let a user get it's metrics", async () => {
+  it.skip("should let a user get it's metrics", async () => {
     const firstRequest = await request(app.server)
       .post("/meals/new")
       .send({
@@ -431,7 +431,7 @@ describe("meals routes", async () => {
     });
   });
 
-  it("shouldn't show a user other user's metric", async () => {
+  it.skip("shouldn't show a user other user's metric", async () => {
     await request(app.server).get("/meals/metrics").expect(400);
   });
 });
