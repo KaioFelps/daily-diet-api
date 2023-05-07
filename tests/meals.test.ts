@@ -24,8 +24,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
       })
       .expect(204);
 
@@ -38,15 +38,15 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        isDiet: false,
+        diet: false,
       })
       .expect(204);
 
     await request(app.server)
       .post("/meals/new")
       .send({
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
       })
       .expect(400);
 
@@ -54,7 +54,7 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
+        desc: "ate a hamburguer with friends",
       })
       .expect(400);
   });
@@ -64,8 +64,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
       })
       .expect(204);
 
@@ -77,8 +77,8 @@ describe("meals routes", async () => {
       .set("Cookie", firstRequestCookies)
       .send({
         title: "salad",
-        description: "made salad for dinner",
-        isDiet: true,
+        desc: "made salad for dinner",
+        diet: true,
       })
       .expect(204);
 
@@ -91,19 +91,24 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
       })
       .expect(204);
 
     const cookies = firstRequest.get("Set-Cookie");
+    const currentDate = new Date();
+    const tenSecondsAheadDate = new Date().setSeconds(
+      currentDate.getSeconds() + 10
+    );
 
     await request(app.server)
       .post("/meals/new")
       .send({
         title: "salad",
-        description: "made salad for dinner",
-        isDiet: true,
+        desc: "made salad for dinner",
+        diet: true,
+        created_at: new Date(tenSecondsAheadDate).toISOString(),
       })
       .set("Cookie", cookies)
       .expect(204);
@@ -114,45 +119,54 @@ describe("meals routes", async () => {
       .expect(200);
 
     expect(listAllMealsResponse.body).toEqual({
-      data: expect.arrayContaining([
-        expect.objectContaining({
-          title: "hamburguer",
-          desc: "ate a hamburguer with friends",
-          diet: 0,
-        }),
+      data: [
         expect.objectContaining({
           title: "salad",
           desc: "made salad for dinner",
           diet: 1,
         }),
-      ]),
+        expect.objectContaining({
+          title: "hamburguer",
+          desc: "ate a hamburguer with friends",
+          diet: 0,
+        }),
+      ],
     });
   });
 
-  it.skip("should be possible to get a specific meal data", async () => {
+  it("should be possible to get a specific meal data", async () => {
     const firstRequestResponse = await request(app.server)
       .post("/meals/new")
       .send({
         title: "salad",
-        description: "made salad for dinner",
-        isDiet: true,
+        desc: "made salad for dinner",
+        diet: true,
       })
       .expect(204);
 
     const firstRequestCookies = firstRequestResponse.get("Set-Cookie");
 
+    const currentDate = new Date();
+    const currentDateTenSecondsAhead = new Date().setSeconds(
+      currentDate.getSeconds() + 10
+    );
     await request(app.server)
       .post("/meals/new")
+      .set("Cookie", firstRequestCookies)
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
+        created_at: new Date(currentDateTenSecondsAhead).toISOString(),
       })
-      .set("Cookie", firstRequestCookies)
       .expect(204);
 
-    const secondRequestId = (await request(app.server).get("/meals/list")).body
-      .data[1].id;
+    const secondRequestId = (
+      await request(app.server)
+        .get("/meals/list")
+        .set("Cookie", firstRequestCookies)
+    ).body.data[0].id;
+    // it is the first object returned, because it is the latest meal added!
 
     const specificMealResponse = await request(app.server)
       .get(`/meals/${secondRequestId}`)
@@ -162,8 +176,8 @@ describe("meals routes", async () => {
     expect(specificMealResponse.body).toEqual({
       data: expect.objectContaining({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: 0,
       }),
     });
   });
@@ -173,8 +187,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
       })
       .expect(204);
 
@@ -184,8 +198,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
       })
       .expect(204);
 
@@ -202,8 +216,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
       })
       .expect(204);
 
@@ -227,8 +241,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
       })
       .expect(204);
 
@@ -251,8 +265,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "hamburguer",
-        description: "ate a hamburguer with friends",
-        isDiet: false,
+        desc: "ate a hamburguer with friends",
+        diet: false,
       })
       .expect(204);
 
@@ -276,7 +290,7 @@ describe("meals routes", async () => {
     await request(app.server)
       .patch(`/meals/edit/${firstRequestId}`)
       .send({
-        description: "made salad for dinner",
+        desc: "made salad for dinner",
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -284,7 +298,7 @@ describe("meals routes", async () => {
     await request(app.server)
       .patch(`/meals/edit/${firstRequestId}`)
       .send({
-        isDiet: true,
+        diet: true,
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -297,8 +311,8 @@ describe("meals routes", async () => {
     expect(editedRequest.body).toEqual({
       data: expect.objectContaining({
         title: "salad",
-        description: "made salad for dinner",
-        isDiet: true,
+        desc: "made salad for dinner",
+        diet: true,
       }),
     });
 
@@ -308,8 +322,8 @@ describe("meals routes", async () => {
       .patch(`/meals/edit/${firstRequestId}`)
       .send({
         title: "ice cream",
-        description: "blue berry icecream",
-        isDiet: false,
+        desc: "blue berry icecream",
+        diet: false,
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -322,8 +336,8 @@ describe("meals routes", async () => {
     expect(secondEditedRequest.body).toEqual({
       data: expect.objectContaining({
         title: "ice cream",
-        description: "blue berry icecream",
-        isDiet: false,
+        desc: "blue berry icecream",
+        diet: false,
       }),
     });
   });
@@ -333,8 +347,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "ice cream",
-        description: "blue berry icecream",
-        isDiet: false,
+        desc: "blue berry icecream",
+        diet: false,
       })
       .expect(204);
 
@@ -359,8 +373,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "ice cream",
-        description: "blue berry icecream",
-        isDiet: false,
+        desc: "blue berry icecream",
+        diet: false,
       })
       .expect(204);
 
@@ -370,8 +384,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "salad",
-        description: "made salad for dinner",
-        isDiet: true,
+        desc: "made salad for dinner",
+        diet: true,
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -380,8 +394,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "bread with scrambled eggs",
-        description: "for breakfast",
-        isDiet: true,
+        desc: "for breakfast",
+        diet: true,
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -390,8 +404,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "Mok the Poke",
-        description: "fitness food for lunch",
-        isDiet: true,
+        desc: "fitness food for lunch",
+        diet: true,
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -400,8 +414,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "pizza",
-        description: "4 cheese 12 pieces pizza",
-        isDiet: false,
+        desc: "4 cheese 12 pieces pizza",
+        diet: false,
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -410,8 +424,8 @@ describe("meals routes", async () => {
       .post("/meals/new")
       .send({
         title: "salad with eggs",
-        description: "for breakfast",
-        isDiet: true,
+        desc: "for breakfast",
+        diet: true,
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);

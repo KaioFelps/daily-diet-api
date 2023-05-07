@@ -9,8 +9,13 @@ export async function mealsRoutes(app: FastifyInstance) {
   app.post("/new", async (req, res) => {
     const newTaskSchema = z.object({
       title: z.string().max(30),
-      description: z.string().optional().nullable(),
-      isDiet: z.boolean(),
+      desc: z.string().optional().nullable(),
+      diet: z.boolean(),
+      created_at: z
+        .string()
+        .datetime()
+        .optional()
+        .default(new Date().toISOString()),
     });
 
     const newTaskProps = newTaskSchema.safeParse(req.body);
@@ -21,7 +26,7 @@ export async function mealsRoutes(app: FastifyInstance) {
       throw new Error("Há campos obrigatórios não preenchidos.");
     }
 
-    const { description, isDiet, title } = newTaskProps.data;
+    const { desc, diet, title, created_at: createdAt } = newTaskProps.data;
 
     const sessionCookie = req.headers.cookie;
     let sessionId: string;
@@ -53,12 +58,15 @@ export async function mealsRoutes(app: FastifyInstance) {
       });
     }
 
+    const formattedCreatedAt = createdAt.replace("T", " ").replace(/\..*$/, "");
+
     const [{ id: mealId }] = await knex("meals")
       .insert({
         title,
-        desc: description,
-        diet: isDiet,
+        desc,
+        diet,
         id: randomUUID(),
+        created_at: formattedCreatedAt,
       })
       .returning("id");
 
@@ -92,9 +100,52 @@ export async function mealsRoutes(app: FastifyInstance) {
 
       const mealsList = await knex("meals")
         .select()
-        .whereIn("id", arrayOfMealIDs);
+        .whereIn("id", arrayOfMealIDs)
+        .orderBy("created_at", "desc");
 
       return res.code(200).send({ data: mealsList });
+    }
+  );
+
+  app.get(
+    "/:id",
+    {
+      preHandler: [validateSessionId],
+    },
+    async (req, res) => {
+      const requestParamSchema = z.object({
+        id: z.string().uuid(),
+      });
+
+      const requestParam = requestParamSchema.safeParse(req.params);
+
+      if (!requestParam.success) {
+        return res
+          .code(400)
+          .send({ message: "Nenhum ID de refeição foi fornecido." });
+      }
+
+      const { id: mealId } = requestParam.data;
+
+      const sessionId = getSessionId(req);
+
+      const [{ session_id: mealSessionId }] = await knex("meal_session")
+        .select("session_id")
+        .where("meal_id", "like", mealId);
+
+      if (!mealSessionId) {
+        return res.code(200).send({ data: {} });
+      }
+
+      if (sessionId !== mealSessionId) {
+        return res.code(401).send({ message: "Unauthorized" });
+      }
+
+      const [meal] = await knex("meals").select().where("id", "like", mealId);
+
+      return res.status(200).send({
+        data: meal,
+      });
     }
   );
 
