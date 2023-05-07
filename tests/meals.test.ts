@@ -182,7 +182,7 @@ describe("meals routes", async () => {
     });
   });
 
-  it.skip("shouldn't show other user's meal", async () => {
+  it("shouldn't show other user's meal", async () => {
     const firstRequestResponse = await request(app.server)
       .post("/meals/new")
       .send({
@@ -211,7 +211,7 @@ describe("meals routes", async () => {
     expect(listFirstUserMeals.body.data.length).toBe(1);
   });
 
-  it.skip("should let a user delete his meal", async () => {
+  it("should let a user delete his meal", async () => {
     const firstRequestResponse = await request(app.server)
       .post("/meals/new")
       .send({
@@ -223,12 +223,14 @@ describe("meals routes", async () => {
 
     const firstRequestCookies = firstRequestResponse.get("Set-Cookie");
 
-    const firstRequestId = (
+    const {
+      data: [{ id: firstRequestId }],
+    } = (
       await request(app.server)
         .get("/meals/list")
         .set("Cookie", firstRequestCookies)
         .expect(200)
-    ).body.data[0].id;
+    ).body;
 
     await request(app.server)
       .delete(`/meals/delete/${firstRequestId}`)
@@ -236,7 +238,7 @@ describe("meals routes", async () => {
       .expect(204);
   });
 
-  it.skip("should not let a user delete other's user meal", async () => {
+  it("should not let a user delete other's user meal", async () => {
     const firstRequestResponse = await request(app.server)
       .post("/meals/new")
       .send({
@@ -248,16 +250,25 @@ describe("meals routes", async () => {
 
     const firstRequestCookies = firstRequestResponse.get("Set-Cookie");
 
-    const firstRequestId = (
+    const {
+      data: [{ id: firstRequestId }],
+    } = (
       await request(app.server)
         .get("/meals/list")
         .set("Cookie", firstRequestCookies)
         .expect(200)
-    ).body.data[0].id;
+    ).body;
 
     await request(app.server)
       .delete(`/meals/delete/${firstRequestId}`)
-      .expect(400);
+      .expect(401);
+
+    const fakeUUID = "a45b3742-ed22-11ed-a05b-0242ac120003";
+
+    await request(app.server)
+      .delete(`/meals/delete/${firstRequestId}`)
+      .set("Cookie", [`session_id=${fakeUUID}`])
+      .expect(401);
   });
 
   it.skip("should be possible to edit a meal", async () => {

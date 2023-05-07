@@ -149,6 +149,40 @@ export async function mealsRoutes(app: FastifyInstance) {
     }
   );
 
+  app.delete(
+    "/delete/:id",
+    { preHandler: [validateSessionId] },
+    async (req, res) => {
+      const requestParamsSchema = z.object({
+        id: z.string().uuid(),
+      });
+
+      const requestParams = requestParamsSchema.safeParse(req.params);
+
+      if (!requestParams.success) {
+        return res.code(404).send({ message: "Nenhum ID foi fornecido." });
+      }
+
+      const { id: mealId } = requestParams.data;
+      const sessionId = getSessionId(req);
+
+      const isMealIdFromSessionId =
+        (
+          await knex("meal_session")
+            .select()
+            .where("session_id", "like", sessionId)
+            .andWhere("meal_id", "like", mealId)
+        ).length > 0;
+
+      if (!isMealIdFromSessionId) {
+        return res.code(401).send({ message: "Unauthorized" });
+      }
+
+      await knex("meals").delete().where("id", "like", mealId);
+      res.code(204);
+    }
+  );
+
   // app.get("/reset", async () => {
   //   await knex("meals").del();
   //   await knex("meal_session").del();
