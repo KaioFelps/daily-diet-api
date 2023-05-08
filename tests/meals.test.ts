@@ -271,7 +271,7 @@ describe("meals routes", async () => {
       .expect(401);
   });
 
-  it.skip("should be possible to edit a meal", async () => {
+  it("should be possible to edit a meal", async () => {
     const firstRequest = await request(app.server)
       .post("/meals/new")
       .send({
@@ -283,12 +283,14 @@ describe("meals routes", async () => {
 
     const firstRequestCookies = firstRequest.get("Set-Cookie");
 
-    const firstRequestId = (
+    const {
+      data: [{ id: firstRequestId }],
+    } = (
       await request(app.server)
         .get("/meals/list")
         .set("Cookie", firstRequestCookies)
         .expect(200)
-    ).body.data[0].id;
+    ).body;
 
     await request(app.server)
       .patch(`/meals/edit/${firstRequestId}`)
@@ -323,7 +325,7 @@ describe("meals routes", async () => {
       data: expect.objectContaining({
         title: "salad",
         desc: "made salad for dinner",
-        diet: true,
+        diet: 1,
       }),
     });
 
@@ -333,8 +335,8 @@ describe("meals routes", async () => {
       .patch(`/meals/edit/${firstRequestId}`)
       .send({
         title: "ice cream",
-        desc: "blue berry icecream",
         diet: false,
+        desc: "blue berry icecream",
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -348,12 +350,12 @@ describe("meals routes", async () => {
       data: expect.objectContaining({
         title: "ice cream",
         desc: "blue berry icecream",
-        diet: false,
+        diet: 0,
       }),
     });
   });
 
-  it.skip("shouldn't be possible to edit other user's meal", async () => {
+  it("shouldn't be possible to edit other user's meal", async () => {
     const firstRequest = await request(app.server)
       .post("/meals/new")
       .send({
@@ -364,19 +366,22 @@ describe("meals routes", async () => {
       .expect(204);
 
     const firstRequestCookies = firstRequest.get("Set-Cookie");
-    const firstRequestId = (
+
+    const {
+      data: [{ id: firstRequestId }],
+    } = (
       await request(app.server)
         .get("/meals/list")
         .set("Cookie", firstRequestCookies)
         .expect(200)
-    ).body.data[0].id;
+    ).body;
 
     await request(app.server)
       .patch(`/meals/edit/${firstRequestId}`)
       .send({
         title: "salad",
       })
-      .expect(400);
+      .expect(401);
   });
 
   it.skip("should let a user get it's metrics", async () => {

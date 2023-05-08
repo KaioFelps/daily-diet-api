@@ -183,6 +183,68 @@ export async function mealsRoutes(app: FastifyInstance) {
     }
   );
 
+  app.patch(
+    "/edit/:id",
+    {
+      preHandler: [validateSessionId],
+    },
+    async (req, res) => {
+      const requestParamsSchema = z.object({
+        id: z.string().uuid(),
+      });
+      const requestBodySchema = z.object({
+        title: z.string().optional(),
+        desc: z.string().max(30).optional().nullable(),
+        diet: z.boolean().optional(),
+      });
+
+      const { title, desc, diet } = requestBodySchema.parse(req.body);
+
+      if (!title && !desc && !diet) {
+        return res.code(204);
+      }
+
+      const requestParams = requestParamsSchema.safeParse(req.params);
+      if (!requestParams.success) {
+        return res.code(400).send({ message: "Nenhum ID foi fornecido." });
+      }
+
+      const { id: mealId } = requestParams.data;
+      const [{ session_id: mealSessionId }] = await knex("meal_session")
+        .select("session_id")
+        .where("meal_id", "like", mealId);
+      const sessionId = getSessionId(req);
+
+      if (!mealSessionId) {
+        return res.code(404).send({ message: "Refeição não encontrada." });
+      }
+
+      if (mealSessionId !== sessionId) {
+        return res.code(401).send({ message: "Unauthorized" });
+      }
+
+      await knex("meals")
+        .where("id", "like", mealId)
+        .modify((qb) => {
+          if (title && typeof title === "string") {
+            qb.update("title", title);
+          }
+          if (desc && typeof desc === "string") {
+            qb.update("desc", desc);
+          }
+          if (typeof diet === "boolean") {
+            qb.update("diet", diet);
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          return res.code(500).send({ message: error });
+        });
+
+      res.code(204);
+    }
+  );
+
   // app.get("/reset", async () => {
   //   await knex("meals").del();
   //   await knex("meal_session").del();
