@@ -384,7 +384,15 @@ describe("meals routes", async () => {
       .expect(401);
   });
 
-  it.skip("should let a user get it's metrics", async () => {
+  it("should let a user get it's metrics", async () => {
+    function getManipulatedDate(seconds: number, currentDate: Date) {
+      const aheadTimeData = new Date().setSeconds(
+        currentDate.getSeconds() + seconds
+      );
+
+      return new Date(aheadTimeData).toISOString();
+    }
+
     const firstRequest = await request(app.server)
       .post("/meals/new")
       .send({
@@ -396,12 +404,15 @@ describe("meals routes", async () => {
 
     const firstRequestCookies = firstRequest.get("Set-Cookie");
 
+    const currentDate = new Date();
+
     await request(app.server)
       .post("/meals/new")
       .send({
         title: "salad",
         desc: "made salad for dinner",
         diet: true,
+        created_at: getManipulatedDate(10, currentDate),
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -412,6 +423,7 @@ describe("meals routes", async () => {
         title: "bread with scrambled eggs",
         desc: "for breakfast",
         diet: true,
+        created_at: getManipulatedDate(20, currentDate),
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -422,6 +434,7 @@ describe("meals routes", async () => {
         title: "Mok the Poke",
         desc: "fitness food for lunch",
         diet: true,
+        created_at: getManipulatedDate(30, currentDate),
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -432,6 +445,7 @@ describe("meals routes", async () => {
         title: "pizza",
         desc: "4 cheese 12 pieces pizza",
         diet: false,
+        created_at: getManipulatedDate(40, currentDate),
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -442,6 +456,7 @@ describe("meals routes", async () => {
         title: "salad with eggs",
         desc: "for breakfast",
         diet: true,
+        created_at: getManipulatedDate(50, currentDate),
       })
       .set("Cookie", firstRequestCookies)
       .expect(204);
@@ -453,36 +468,15 @@ describe("meals routes", async () => {
       .set("Cookie", firstRequestCookies)
       .expect(200);
 
-    expect(metricsResponse.body).toEqual({
+    expect(metricsResponse.body).toContain({
       totalMeals: 6,
-      totalDietMelas: 4,
+      totalDietMeals: 4,
       totalNonDietMeals: 2,
       dietSequenceRecord: 3,
     });
   });
 
-  it.skip("shouldn't show a user other user's metric", async () => {
-    await request(app.server).get("/meals/metrics").expect(400);
+  it("shouldn't show a user other user's metric", async () => {
+    await request(app.server).get("/meals/metrics").expect(401);
   });
 });
-
-/*
-- [x] Deve ser possível criar um usuário
-- [x] Deve ser possível identificar o usuário entre as requisições
-- [x] Deve ser possível registrar uma refeição feita, com as seguintes informações:
-    <!-- As refeições devem ser relacionadas a um usuário. -->
-    - Nome
-    - Descrição
-    - Data e Hora
-    - Está dentro ou não da dieta
-- [x] Deve ser possível editar uma refeição, podendo alterar todos os dados acima
-- [x] Deve ser possível apagar uma refeição
-- [x] Deve ser possível listar todas as refeições de um usuário
-- [x] Deve ser possível visualizar uma única refeição
-- [x] Deve ser possível recuperar as métricas de um usuário
-    - Quantidade total de refeições registradas
-    - Quantidade total de refeições dentro da dieta
-    - Quantidade total de refeições fora da dieta
-    - Melhor sequência por dia de refeições dentro da dieta
-- [x] O usuário só pode visualizar, editar e apagar as refeições criadas por ele
-*/

@@ -245,9 +245,73 @@ export async function mealsRoutes(app: FastifyInstance) {
     }
   );
 
-  // app.get("/reset", async () => {
-  //   await knex("meals").del();
-  //   await knex("meal_session").del();
-  //   await knex("sessions").del();
-  // });
+  app.get(
+    "/metrics",
+    {
+      preHandler: validateSessionId,
+    },
+    async (req, res) => {
+      const sessionId = getSessionId(req);
+
+      const userMealsIDs = (
+        await knex("meal_session")
+          .select("meal_id")
+          .where("session_id", sessionId)
+      ).map((meal) => {
+        return meal.meal_id;
+      });
+
+      const userHealthyMeals = await knex("meals")
+        .count("diet", { as: "total" })
+        .where("diet", true);
+
+      const healthyMealsSequences: {
+        id: string;
+        title: string;
+        desc: string | null;
+        created_at: string;
+        diet: boolean;
+      }[][] = [];
+
+      let healthyMealIterableArray: {
+        id: string;
+        title: string;
+        desc: string | null;
+        created_at: string;
+        diet: boolean;
+      }[] = [];
+
+      const userMeals = await knex("meals")
+        .select()
+        .whereIn("id", userMealsIDs)
+        .orderBy("created_at");
+
+      // gets the sequences of healthy meals
+      for (const meal of userMeals) {
+        if (meal.diet) {
+          healthyMealIterableArray.push(meal);
+        } else if (healthyMealIterableArray.length > 0) {
+          healthyMealsSequences.push(healthyMealIterableArray);
+          healthyMealIterableArray = [];
+        }
+      }
+
+      // gets the longest healthy meals sequence
+      let biggestSequenceLength = 0;
+
+      for (const sequence of healthyMealsSequences) {
+        if (sequence.length > biggestSequenceLength) {
+          biggestSequenceLength = sequence.length;
+        }
+      }
+
+      res.status(200).send({
+        totalMeals: userMealsIDs.length,
+        totalDietMeals: Number(userHealthyMeals[0].total),
+        totalNonDietMeals:
+          userMealsIDs.length - Number(userHealthyMeals[0].total),
+        dietSequenceRecord: biggestSequenceLength,
+      });
+    }
+  );
 }
